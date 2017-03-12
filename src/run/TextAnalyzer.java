@@ -2,7 +2,10 @@ package run;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -23,28 +26,28 @@ public class TextAnalyzer {
 	private Map<Character, Integer> lastLetterCounter;
 	
 	private Map<Character, Double> letterFrequency;
-	private Map<Character, Double> firstLetterFrequency;
+	private Map<Character, Double> firstLetterFrequency;	// will be used in later versions
 	private Map<Character, Double> lastLetterFrequency;
 	
-	private ArrayList<String> statistics;
+	private ArrayList<String> statisticsLog;
 	
 	public TextAnalyzer(String text) {
 		
 		this.text = text.toLowerCase().trim().replace("\uFEFF", "");	// trim and remove BOM
 		
-		totalLetters = 0;
-		totalFirstLetters = 0;
-		totalLastLetters = 0;
+		totalLetters 		= 0;
+		totalFirstLetters 	= 0;
+		totalLastLetters 	= 0;
 		
-		letterCounter = new CounterHashMap();
-		firstLetterCounter = new CounterHashMap();
-		lastLetterCounter = new CounterHashMap();
+		letterCounter 		= new CounterHashMap();
+		firstLetterCounter 	= new CounterHashMap();
+		lastLetterCounter 	= new CounterHashMap();
 		
-		letterFrequency = new FrequencyHashMap();
-		firstLetterFrequency = new FrequencyHashMap();
+		letterFrequency 	= new FrequencyHashMap();
+		firstLetterFrequency= new FrequencyHashMap();
 		lastLetterFrequency = new FrequencyHashMap();
 		
-		statistics = new ArrayList<String>();
+		statisticsLog = new ArrayList<String>();
 	}
 	
 	public void analyze() {
@@ -110,7 +113,7 @@ public class TextAnalyzer {
 			DecimalFormat df = new DecimalFormat("0.00");
 			String freqString = df.format(freq * 100.0);
 			
-			statistics.add("\t\"" + pair.getKey() + "\""
+			statisticsLog.add("\t\"" + pair.getKey() + "\""
 	        + ":\t" + pair.getValue() + "\t" 
 	        + freqString + "%");
 			
@@ -141,33 +144,86 @@ public class TextAnalyzer {
 			it.remove();
 		}
 		
-		statistics.add("\n");
+		statisticsLog.add("\n");
 		
-		statistics.add("\tTotal number of letters: " + totalLetters);
-		statistics.add("\tTotal number of first letters: " + totalFirstLetters);
-		statistics.add("\tTotal number of last letters: " + totalLastLetters);
+		statisticsLog.add("\tTotal number of letters: " + totalLetters);
+		statisticsLog.add("\tTotal number of first letters: " + totalFirstLetters);
+		statisticsLog.add("\tTotal number of last letters: " + totalLastLetters);
 	}
 	
 	public void decrypt() {
 		
 		// TODO
 		
-		// determine which what character is which character in decrypted form (assume the language is english for now, should change in future versiones)
+		// determine what character is which character in decrypted form (assume the language is english for now, should change in future versiones)
 		
 		// save decrypted text in variable
 		
 		// print text
 		
 		
+		// Sort the letters in letterFrequency (from highest freq to lowest).
+		// Loop over every letter in language and get frequency 
+		// difference between letter from text and statistics of language.
+		// Save available letters of statistics in list, assign the one
+		// that has the smallest difference between the two values to the letter from the text
+		// and remove it from the list.
+		
+		String [] sortedLetters = ((FrequencyHashMap) letterFrequency).getSortedLetters(FrequencyHashMap.DESCENDING);
+		ArrayList<String> availableLetters = new ArrayList<String>(Arrays.asList(Language.English.getAvailableLetters()));
+		Map<String, String> letterAssignment = new HashMap<String, String>();
+		
+		for(int i = 0; i < sortedLetters.length; i++) {
+			
+			String letterFromText = sortedLetters[i];
+			double textFreq = letterFrequency.get(letterFromText);
+			
+			int matchingLetterIndex = -1;
+			double lowestDiff = 1.0;
+			
+			for(int k = 0; k < availableLetters.size(); k++) {
+				
+				double statsFreq = Language.English.getFrequency(availableLetters.get(k));
+				
+				double diff = Math.abs(textFreq - statsFreq);
+				
+				if(diff < lowestDiff) {
+					
+					lowestDiff = diff;
+					matchingLetterIndex = k;
+				}
+			}
+			
+			if(matchingLetterIndex != -1) {
+				String matchingLetter = availableLetters.remove(matchingLetterIndex);
+				letterAssignment.put(letterFromText, matchingLetter);
+				
+				System.out.println("Letter: " + letterFromText + " is " + matchingLetter + " diff: " + lowestDiff);
+			}
+		}
+		
+		String newText = "";
+		for(int k = 0; k < text.length(); k++) {
+			
+			String c = text.charAt(k) + "";
+			
+			String res = letterAssignment.get(c);
+			if(res != null)
+				newText += res;
+			else
+				newText += c;
+		}
+		
+		System.out.println(newText);
 	}
 	
 	
 	
 	public void printResults() {				// prints statistics
 		
-		for(int i = 0; i < statistics.size(); i++) {
+		for(int i = 0; i < statisticsLog.size(); i++) {
 			
-			System.out.println(statistics.get(i));
+			System.out.println(statisticsLog.get(i));
 		}
 	}
 	
